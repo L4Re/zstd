@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Yann Collet, Facebook, Inc.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -99,7 +99,7 @@ size_t ZSTD_compressLiterals (ZSTD_hufCTables_t const* prevHuf,
                         const void* src, size_t srcSize,
                               void* entropyWorkspace, size_t entropyWorkspaceSize,
                         const int bmi2,
-                        unsigned suspectUncompressible)
+                        unsigned suspectUncompressible, HUF_depth_mode depthMode)
 {
     size_t const minGain = ZSTD_minGain(srcSize, strategy);
     size_t const lhSize = 3 + (srcSize >= 1 KB) + (srcSize >= 16 KB);
@@ -128,7 +128,7 @@ size_t ZSTD_compressLiterals (ZSTD_hufCTables_t const* prevHuf,
     RETURN_ERROR_IF(dstCapacity < lhSize+1, dstSize_tooSmall, "not enough space for compression");
     {   HUF_repeat repeat = prevHuf->repeatMode;
         int const preferRepeat = (strategy < ZSTD_lazy) ? srcSize <= 1024 : 0;
-        typedef size_t (*huf_compress_f)(void*, size_t, const void*, size_t, unsigned, unsigned, void*, size_t, HUF_CElt*, HUF_repeat*, int, int, unsigned);
+        typedef size_t (*huf_compress_f)(void*, size_t, const void*, size_t, unsigned, unsigned, void*, size_t, HUF_CElt*, HUF_repeat*, int, int, unsigned, HUF_depth_mode);
         huf_compress_f huf_compress;
         if (repeat == HUF_repeat_valid && lhSize == 3) singleStream = 1;
         huf_compress = singleStream ? HUF_compress1X_repeat : HUF_compress4X_repeat;
@@ -138,7 +138,7 @@ size_t ZSTD_compressLiterals (ZSTD_hufCTables_t const* prevHuf,
                                 entropyWorkspace, entropyWorkspaceSize,
                                 (HUF_CElt*)nextHuf->CTable,
                                 &repeat, preferRepeat,
-                                bmi2, suspectUncompressible);
+                                bmi2, suspectUncompressible, depthMode);
         if (repeat != HUF_repeat_none) {
             /* reused the existing table */
             DEBUGLOG(5, "Reusing previous huffman table");
@@ -164,16 +164,19 @@ size_t ZSTD_compressLiterals (ZSTD_hufCTables_t const* prevHuf,
     switch(lhSize)
     {
     case 3: /* 2 - 2 - 10 - 10 */
+        if (!singleStream) assert(srcSize >= MIN_LITERALS_FOR_4_STREAMS);
         {   U32 const lhc = hType + ((U32)(!singleStream) << 2) + ((U32)srcSize<<4) + ((U32)cLitSize<<14);
             MEM_writeLE24(ostart, lhc);
             break;
         }
     case 4: /* 2 - 2 - 14 - 14 */
+        assert(srcSize >= MIN_LITERALS_FOR_4_STREAMS);
         {   U32 const lhc = hType + (2 << 2) + ((U32)srcSize<<4) + ((U32)cLitSize<<18);
             MEM_writeLE32(ostart, lhc);
             break;
         }
     case 5: /* 2 - 2 - 18 - 18 */
+        assert(srcSize >= MIN_LITERALS_FOR_4_STREAMS);
         {   U32 const lhc = hType + (3 << 2) + ((U32)srcSize<<4) + ((U32)cLitSize<<22);
             MEM_writeLE32(ostart, lhc);
             ostart[4] = (BYTE)(cLitSize >> 10);

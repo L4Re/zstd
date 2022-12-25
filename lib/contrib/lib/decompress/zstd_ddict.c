@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Yann Collet, Facebook, Inc.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -240,5 +240,5 @@ size_t ZSTD_sizeof_DDict(const ZSTD_DDict* ddict)
 unsigned ZSTD_getDictID_fromDDict(const ZSTD_DDict* ddict)
 {
     if (ddict==NULL) return 0;
-    return ZSTD_getDictID_fromDict(ddict->dictContent, ddict->dictSize);
+    return ddict->dictID;
 }
