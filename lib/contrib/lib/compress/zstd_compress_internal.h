@@ -1053,7 +1053,9 @@ MEM_STATIC U32 ZSTD_window_needOverflowCorrection(ZSTD_window_t const window,
  * The least significant cycleLog bits of the indices must remain the same,
  * which may be 0. Every index up to maxDist in the past must be valid.
  */
-MEM_STATIC U32 ZSTD_window_correctOverflow(ZSTD_window_t* window, U32 cycleLog,
+MEM_STATIC
+ZSTD_ALLOW_POINTER_OVERFLOW_ATTR
+U32 ZSTD_window_correctOverflow(ZSTD_window_t* window, U32 cycleLog,
                                            U32 maxDist, void const* src)
 {
     /* preemptive overflow correction:
@@ -1246,7 +1248,9 @@ MEM_STATIC void ZSTD_window_init(ZSTD_window_t* window) {
  * forget about the extDict. Handles overlap of the prefix and extDict.
  * Returns non-zero if the segment is contiguous.
  */
-MEM_STATIC U32 ZSTD_window_update(ZSTD_window_t* window,
+MEM_STATIC
+ZSTD_ALLOW_POINTER_OVERFLOW_ATTR
+U32 ZSTD_window_update(ZSTD_window_t* window,
                                   void const* src, size_t srcSize,
                                   int forceNonContiguous)
 {
@@ -1467,11 +1471,10 @@ size_t ZSTD_writeLastEmptyBlock(void* dst, size_t dstCapacity);
  * This cannot be used when long range matching is enabled.
  * Zstd will use these sequences, and pass the literals to a secondary block
  * compressor.
- * @return : An error code on failure.
  * NOTE: seqs are not verified! Invalid sequences can cause out-of-bounds memory
  * access and data corruption.
  */
-size_t ZSTD_referenceExternalSequences(ZSTD_CCtx* cctx, rawSeq* seq, size_t nbSeq);
+void ZSTD_referenceExternalSequences(ZSTD_CCtx* cctx, rawSeq* seq, size_t nbSeq);
 
 /** ZSTD_cycleLog() :
  *  condition for correct operation : hashLog > 1 */
